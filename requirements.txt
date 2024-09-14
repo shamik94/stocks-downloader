@@ -1,0 +1,5 @@
+celery
+sqlalchemy
+psycopg2-binary
+yfinance
+redis>=3.5.3
