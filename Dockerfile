@@ -22,8 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create and switch to a non-root user
-RUN useradd -m celeryuser && chown -R celeryuser /app
-USER celeryuser
+RUN useradd -m appuser && chown -R appuser /app
+USER appuser
 
-# Specify the default command to run your Celery worker
-CMD ["celery", "-A", "src.scheduler", "worker", "--pool=solo", "--loglevel=info"]
+# Specify the default command to run the scheduler
+CMD ["python", "src/scheduler.py"]

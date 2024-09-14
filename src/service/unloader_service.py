@@ -8,7 +8,6 @@ import yfinance as yf
 
 # Assuming country_columns is imported correctly
 from src.mapper.country_columns import country_columns
-from src.service.notification_service import job_finished_notification
 
 Base = declarative_base()
 

@@ -17,11 +17,6 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:6
-    ports:
-      - "6380:6379"
-
   app:
     build: .
     environment:
@@ -30,13 +25,9 @@ services:
       DB_NAME: stockdata
       DB_USER: user
       DB_PASSWORD: password
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_started
 
 volumes:
   postgres_data:
