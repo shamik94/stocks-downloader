@@ -18,8 +18,8 @@ This project is designed to download stock data for specific countries over a ti
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
-cd <repository-directory>
+git clone git@github.com:shamik94/stocks-downloader.git
+cd stocks-downloader
 ```
 
 ### 2. Build and Run the Docker Containers
