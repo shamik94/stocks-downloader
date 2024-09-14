@@ -1,6 +1,5 @@
 
-# Stock Data Unloader
-
+# Stock Downloader (Unloader)
 This project is designed to download stock data for specific countries over a time range, store it in a PostgreSQL database, and schedule recurring tasks using Python's schedule library.
 
 ## Prerequisites
