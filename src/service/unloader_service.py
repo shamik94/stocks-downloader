@@ -7,7 +7,8 @@ from sqlalchemy.orm import sessionmaker
 import yfinance as yf
 
 # Assuming country_columns is imported correctly
-from src.country_columns import country_columns
+from src.mapper.country_columns import country_columns
+from src.service.notification_service import job_finished_notification
 
 Base = declarative_base()
 
@@ -28,7 +29,7 @@ class StockData(Base):
 DB_HOST = os.environ.get('DB_HOST', 'localhost')
 DB_PORT = os.environ.get('DB_PORT', '5432')
 DB_NAME = os.environ.get('DB_NAME', 'stockdata')
-DB_USER = os.environ.get('DB_USER', 'username')
+DB_USER = os.environ.get('DB_USER', 'user')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', 'password')
 
 # Construct the database URL
@@ -39,7 +40,12 @@ engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
 
 def init_db():
-    Base.metadata.create_all(engine)
+    try:
+        Base.metadata.create_all(engine)
+        print("Tables created successfully.")
+    except Exception as e:
+        print(f"Error creating tables: {e}")
+
 
 def save_stock_data(df, symbol, country):
     session = Session()
@@ -72,7 +78,9 @@ def unload(start_date, end_date, country, stock):
         print(f"Error Fetching Data: {e}")
 
 def unload_all(start_date, end_date, country):
-    stock_list_path = Path(__file__).parent / f"src/resources/stock_list/{country}"
+    stock_list_path = Path(__file__).parent / f"../resources/stock_list/{country}"
+    print(f"Looking for stock list file at: {stock_list_path}")
+
     try:
         with stock_list_path.open() as f:
             stock_list = f.read().splitlines()

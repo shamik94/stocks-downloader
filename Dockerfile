@@ -26,4 +26,4 @@ RUN useradd -m celeryuser && chown -R celeryuser /app
 USER celeryuser
 
 # Specify the default command to run your Celery worker
-CMD ["celery", "-A", "src.scheduler", "worker", "--beat", "--loglevel=info"]
+CMD ["celery", "-A", "src.scheduler", "worker", "--pool=solo", "--loglevel=info"]
