@@ -37,6 +37,13 @@ if not DATABASE_URL:
     DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 
+if DATABASE_URL:
+    print(f"Connecting to database at: {DATABASE_URL}")
+    engine = create_engine(DATABASE_URL)
+else:
+    print("No DATABASE_URL found. Using local database settings.")
+    # ... existing code ...
+
 # Create engine and session
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
