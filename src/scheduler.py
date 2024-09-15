@@ -1,5 +1,5 @@
-import schedule
-import time
+from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime, timedelta
 from src.service.unloader_service import unload_all, init_db
 
@@ -20,19 +20,16 @@ def at_start():
     # Trigger the first task immediately at startup
     scheduled_unload_all()
 
-# Schedule the unload task to run on weekdays at midnight
-schedule.every().monday.at("00:00").do(scheduled_unload_all)
-schedule.every().tuesday.at("00:00").do(scheduled_unload_all)
-schedule.every().wednesday.at("00:00").do(scheduled_unload_all)
-schedule.every().thursday.at("00:00").do(scheduled_unload_all)
-schedule.every().friday.at("00:00").do(scheduled_unload_all)
+# Create the scheduler
+scheduler = BlockingScheduler()
+
+# Schedule the task to run on weekdays (Monday-Friday) at midnight
+scheduler.add_job(scheduled_unload_all, CronTrigger(day_of_week='mon-sat', hour=10, minute=47))
 
 if __name__ == "__main__":
-    at_start()  # Initialize the database and run the task at startup
-    
+    at_start()  # Initialize the database and run the first task at startup
+
     print("Scheduler started. Running tasks at the scheduled time...")
-    
-    # Run the schedule in an infinite loop
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+
+    # Start the APScheduler event loop
+    scheduler.start()

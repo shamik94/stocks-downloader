@@ -71,16 +71,7 @@ To add more stocks, modify the relevant country file in the `src/resources/stock
 
 ## Task Scheduling
 
-By default, the `unload_all` task is scheduled to run every weekday at midnight:
-
-```python
-app.conf.beat_schedule = {
-    'unload-all-weekdays': {
-        'task': 'src.scheduler.scheduled_unload_all',
-        'schedule': crontab(hour=0, minute=0, day_of_week='1-5'),  # Weekdays at midnight
-    },
-}
-```
+By default, the `unload_all` task is scheduled to run every weekday at midnight.
 
 ## Common Issues
 
