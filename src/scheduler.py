@@ -24,7 +24,7 @@ def at_start():
 scheduler = BlockingScheduler()
 
 # Schedule the task to run on weekdays (Monday-Friday) at midnight
-scheduler.add_job(scheduled_unload_all, CronTrigger(day_of_week='mon-sat', hour=10, minute=47))
+scheduler.add_job(scheduled_unload_all, CronTrigger(day_of_week='mon-fri', hour=0, minute=0))
 
 if __name__ == "__main__":
     at_start()  # Initialize the database and run the first task at startup
