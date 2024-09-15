@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set PYTHONPATH to include /app
 ENV PYTHONPATH=/app
 
+# Ensure the environment variables are available
+ENV PYTHONUNBUFFERED=1
+
 # Copy the requirements file into the container
 COPY requirements.txt .
 

@@ -24,15 +24,18 @@ class StockData(Base):
     volume = Column(Integer)
     country = Column(String)
 
-# Database connection parameters from environment variables
-DB_HOST = os.environ.get('DB_HOST', 'localhost')
-DB_PORT = os.environ.get('DB_PORT', '5432')
-DB_NAME = os.environ.get('DB_NAME', 'stockdata')
-DB_USER = os.environ.get('DB_USER', 'user')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', 'password')
+# Get the DATABASE_URL from Heroku's environment variables
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
-# Construct the database URL
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+if not DATABASE_URL:
+    # Fallback to local settings if DATABASE_URL is not set
+    DB_HOST = os.environ.get('DB_HOST', 'localhost')
+    DB_PORT = os.environ.get('DB_PORT', '5432')
+    DB_NAME = os.environ.get('DB_NAME', 'stockdata')
+    DB_USER = os.environ.get('DB_USER', 'user')
+    DB_PASSWORD = os.environ.get('DB_PASSWORD', 'password')
+    DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
 
 # Create engine and session
 engine = create_engine(DATABASE_URL)
