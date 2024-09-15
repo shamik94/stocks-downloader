@@ -6,7 +6,7 @@ from src.service.unloader_service import unload_all, init_db
 def scheduled_unload_all():
     print("Scheduled unload task started")
     end_date = datetime.now().strftime('%Y-%m-%d')
-    start_date = (datetime.now() - timedelta(days=10)).strftime('%Y-%m-%d')
+    start_date = '2020-01-01'  # Set start_date to January 1, 2020
     countries = ['usa']
     for country in countries:
         print(f"Processing country: {country}")

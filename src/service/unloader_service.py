@@ -1,5 +1,6 @@
 import os
-from datetime import datetime
+import time  # Import time module for sleep
+from datetime import datetime, timedelta
 from pathlib import Path
 from sqlalchemy import create_engine, Column, Integer, String, Float, Date
 from sqlalchemy.ext.declarative import declarative_base
@@ -36,7 +37,6 @@ if not DATABASE_URL:
     DB_PASSWORD = os.environ.get('DB_PASSWORD', 'password')
     DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-
 if DATABASE_URL:
     print(f"Connecting to database at: {DATABASE_URL}")
     engine = create_engine(DATABASE_URL)
@@ -45,7 +45,6 @@ else:
     # ... existing code ...
 
 # Create engine and session
-engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
 
 def init_db():
@@ -55,11 +54,11 @@ def init_db():
     except Exception as e:
         print(f"Error creating tables: {e}")
 
-
 def save_stock_data(df, symbol, country):
     session = Session()
     try:
         for _, row in df.iterrows():
+            # Create a new StockData object
             stock_data = StockData(
                 symbol=symbol,
                 date=row['date'],
@@ -79,12 +78,30 @@ def save_stock_data(df, symbol, country):
         session.close()
 
 def unload(start_date, end_date, country, stock):
-    print(f'Unloading Stock {stock} from start_date = {start_date} to end_date = {end_date}')
+    print(f'Processing Stock {stock}')
+    session = Session()
     try:
+        # Check for the latest date we have data for this stock
+        latest_entry = session.query(StockData).filter(StockData.symbol == stock).order_by(StockData.date.desc()).first()
+        if latest_entry:
+            # Set start_date to the day after the latest date we have
+            start_date_in_db = latest_entry.date
+            start_date = (start_date_in_db + timedelta(days=1)).strftime('%Y-%m-%d')
+            print(f"Data already exists up to {latest_entry.date} for {stock}. Updating start_date to {start_date}")
+        else:
+            print(f"No existing data found for {stock}. Using start_date {start_date}")
+        session.close()
+
+        # Check if start_date is after end_date
+        if datetime.strptime(start_date, '%Y-%m-%d') > datetime.strptime(end_date, '%Y-%m-%d'):
+            print(f"No new data to fetch for {stock}")
+            return
+
+        print(f'Unloading Stock {stock} from start_date = {start_date} to end_date = {end_date}')
         df = get_sorted_data(stock, start_date, end_date, country)
         save_stock_data(df, stock, country)
     except Exception as e:
-        print(f"Error Fetching Data: {e}")
+        print(f"Error fetching data for {stock}: {e}")
 
 def unload_all(start_date, end_date, country):
     stock_list_path = Path(__file__).parent / f"../resources/stock_list/{country}"
@@ -100,6 +117,7 @@ def unload_all(start_date, end_date, country):
 
         for stock in stock_list:
             unload(start_date, end_date, country, stock)
+            time.sleep(2)  # Sleep for 2 seconds after processing each stock
     except FileNotFoundError:
         print(f"Stock list file not found for country: {country}")
     except Exception as e:
@@ -149,3 +167,10 @@ def fetchData(symbol, from_date, to_date, country):
 if __name__ == "__main__":
     init_db()
     print("Database initialized")
+    
+    # Set start_date to January 1, 2020, and end_date to current date
+    start_date = '2020-01-01'
+    end_date = datetime.now().strftime('%Y-%m-%d')
+    country = 'usa'  # Specify the country you want to process
+
+    unload_all(start_date, end_date, country)
