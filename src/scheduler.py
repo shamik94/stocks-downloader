@@ -7,7 +7,7 @@ def scheduled_unload_all():
     print("Scheduled unload task started")
     end_date = datetime.now().strftime('%Y-%m-%d')
     start_date = '2020-01-01'  # Set start_date to January 1, 2020
-    countries = ['usa']
+    countries = ['india']
     for country in countries:
         print(f"Processing country: {country}")
         unload_all(start_date, end_date, country)

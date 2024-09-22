@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import yfinance as yf
+from jugaad_data.nse import stock_df
 
 # Assuming country_columns is imported correctly
 from src.mapper.country_columns import country_columns
@@ -145,6 +146,10 @@ def get_sorted_data(stock, start_date, end_date, country):
     return df
 
 def fetchData(symbol, from_date, to_date, country):
+    if country == 'india':
+        from_date_dt = datetime.strptime(from_date, '%Y-%m-%d')
+        to_date_dt = datetime.strptime(to_date, '%Y-%m-%d')
+        return stock_df(symbol, from_date_dt, to_date_dt, series="EQ")
     if country in ['usa', 'crypto', 'germany']:
         try:
             df = yf.download(symbol, start=from_date, end=to_date)

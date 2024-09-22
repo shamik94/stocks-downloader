@@ -2,3 +2,4 @@ sqlalchemy
 psycopg2-binary
 yfinance
 APScheduler
+jugaad_data
