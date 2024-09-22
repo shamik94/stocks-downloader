@@ -37,6 +37,8 @@ if not DATABASE_URL:
     DB_PASSWORD = os.environ.get('DB_PASSWORD', 'password')
     DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
+engine = create_engine(DATABASE_URL)
+
 # Create engine and session
 Session = sessionmaker(bind=engine)
 
