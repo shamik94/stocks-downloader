@@ -13,6 +13,9 @@ from src.mapper.country_columns import country_columns
 
 Base = declarative_base()
 
+stock_start_enabled = True
+stock_start_symbol = 'GRMOVER'
+
 class StockData(Base):
     __tablename__ = 'stock_data'
 
@@ -84,13 +87,6 @@ def unload(start_date, end_date, country, stock):
             start_date_in_db = latest_entry.date
             start_date = (start_date_in_db + timedelta(days=1)).strftime('%Y-%m-%d')
             print(f"Data already exists up to {latest_entry.date} for {stock}. Updating start_date to {start_date}")
-            
-            # Check if start_date is Friday and end_date is a weekend
-            start_date_dt = datetime.strptime(start_date, '%Y-%m-%d')
-            end_date_dt = datetime.strptime(end_date, '%Y-%m-%d')
-            if start_date_dt.weekday() == 4 and end_date_dt.weekday() in [5, 6]:
-                print(f"Skipping {stock}: start_date is Friday and end_date is a weekend")
-                return
         else:
             print(f"No existing data found for {stock}. Using start_date {start_date}")
         session.close()
@@ -103,7 +99,6 @@ def unload(start_date, end_date, country, stock):
         print(f'Unloading Stock {stock} from start_date = {start_date} to end_date = {end_date}')
         df = get_sorted_data(stock, start_date, end_date, country)
         save_stock_data(df, stock, country)
-        time.sleep(2)  # Sleep for 2 seconds after processing each stock
     except Exception as e:
         print(f"Error fetching data for {stock}: {e}")
 
@@ -119,8 +114,19 @@ def unload_all(start_date, end_date, country):
             print(f"No stocks found for country: {country}")
             return
 
+        start_processing = not stock_start_enabled
+
         for stock in stock_list:
-            unload(start_date, end_date, country, stock)
+            if stock_start_enabled and stock == stock_start_symbol:
+                start_processing = True
+                continue  # Skip the stock_start_symbol itself
+
+            if start_processing:
+                unload(start_date, end_date, country, stock)
+                time.sleep(2)  # Sleep for 2 seconds after processing each stock
+            else:
+                print(f"Skipping {stock} as it comes before {stock_start_symbol}")
+
     except FileNotFoundError:
         print(f"Stock list file not found for country: {country}")
     except Exception as e:
