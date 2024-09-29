@@ -14,8 +14,8 @@ from src.mapper.country_columns import country_columns
 Base = declarative_base()
 
 # If you want to start unloading from a specific stock, set this to True and set the stock_start_symbol to the stock you want to start with
-stock_start_enabled = True
-stock_start_symbol = 'THOMASCOTT'
+stock_start_enabled = False
+stock_start_symbol = ''
 
 class StockData(Base):
     __tablename__ = 'stock_data'
