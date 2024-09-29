@@ -104,6 +104,7 @@ def unload(start_date, end_date, country, stock):
         print(f"Error fetching data for {stock}: {e}")
 
 def unload_all(start_date, end_date, country):
+    print(f"Starting unload_all for country: {country}")  # Add this line
     stock_list_path = Path(__file__).parent / f"../resources/stock_list/{country}"
     print(f"Looking for stock list file at: {stock_list_path}")
 
@@ -117,21 +118,11 @@ def unload_all(start_date, end_date, country):
 
         start_processing = not stock_start_enabled
 
-        start_processing = not stock_start_enabled
-
         for stock in stock_list:
+            print(f"Considering stock: {stock}")  # Add this line
             if stock_start_enabled and stock == stock_start_symbol:
                 start_processing = True
-                continue  # Skip the stock_start_symbol itself
-
-            if start_processing:
-                unload(start_date, end_date, country, stock)
-                time.sleep(2)  # Sleep for 2 seconds after processing each stock
-            else:
-                print(f"Skipping {stock} as it comes before {stock_start_symbol}")
-
-            if stock_start_enabled and stock == stock_start_symbol:
-                start_processing = True
+                print(f"Found start symbol: {stock}")  # Add this line
                 continue  # Skip the stock_start_symbol itself
 
             if start_processing:
@@ -144,6 +135,8 @@ def unload_all(start_date, end_date, country):
         print(f"Stock list file not found for country: {country}")
     except Exception as e:
         print(f"Error in unload_all: {e}")
+
+    print(f"Finished unload_all for country: {country}")  # Add this line
 
 def get_sorted_data(stock, start_date, end_date, country):
     df = fetchData(symbol=stock, from_date=start_date, to_date=end_date, country=country)
