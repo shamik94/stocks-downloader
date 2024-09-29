@@ -2,6 +2,9 @@
 # Stock Downloader (Unloader)
 This project is designed to download stock data for specific countries over a time range, store it in a PostgreSQL database, and schedule recurring tasks using Python's schedule library.
 
+![stocks_service](https://github.com/user-attachments/assets/1e8643e1-60cc-49cc-8bbf-7ae1aa8e10d9)
+
+
 ## Prerequisites
 
 - Docker
