@@ -1,35 +1,28 @@
+import os
+from datetime import datetime
+
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
-from datetime import datetime, timedelta
-from src.service.unloader_service import unload_all, init_db
 
-def scheduled_unload_all():
-    print("Scheduled unload task started")
+from src.service.unloader_service import init_db, unload_all
+
+COUNTRIES = os.environ.get('COUNTRIES', 'india,usa').split(',')
+START_DATE = os.environ.get('HISTORY_START_DATE', '2020-01-01')
+
+
+def run_unload():
     end_date = datetime.now().strftime('%Y-%m-%d')
-    start_date = '2020-01-01'  # Set start_date to January 1, 2020
-    countries = ['india','usa']
-    for country in countries:
-        print(f"Processing country: {country}")
-        unload_all(start_date, end_date, country)
-    print("Scheduled unload task completed")
+    print(f"Running unload for: {COUNTRIES}")
+    for country in COUNTRIES:
+        unload_all(START_DATE, end_date, country)
+    print("Unload complete.")
 
-def at_start():
-    print("Initializing database...")
-    init_db()  # Initialize the database
-
-    # Trigger the first task immediately at startup
-    scheduled_unload_all()
-
-# Create the scheduler
-scheduler = BlockingScheduler()
-
-# Schedule the task to run on weekdays (Monday-Friday) at midnight
-scheduler.add_job(scheduled_unload_all, CronTrigger(day_of_week='mon-fri', hour=0, minute=0))
 
 if __name__ == "__main__":
-    at_start()  # Initialize the database and run the first task at startup
+    init_db()
+    run_unload()
 
-    print("Scheduler started. Running tasks at the scheduled time...")
-
-    # Start the APScheduler event loop
+    scheduler = BlockingScheduler()
+    scheduler.add_job(run_unload, CronTrigger(day_of_week='mon-fri', hour=0, minute=0))
+    print("Scheduler running. Tasks fire weekdays at midnight.")
     scheduler.start()

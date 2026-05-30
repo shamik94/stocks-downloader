@@ -1,34 +1,22 @@
+_YFINANCE_COLUMNS = {
+    "date": "Date",
+    "open": "Open",
+    "high": "High",
+    "low": "Low",
+    "close": "Close",
+    "volume": "Volume",
+}
+
 country_columns = {
     "india": {
-        "high": "HIGH",
-        "close": "CLOSE",
-        "low": "LOW",
-        "open": "OPEN",
-        "volume": "VOLUME",
         "date": "DATE",
+        "open": "OPEN",
+        "high": "HIGH",
+        "low": "LOW",
+        "close": "CLOSE",
+        "volume": "VOLUME",
     },
-    "usa": {
-        "high": "High",
-        "close": "Close",
-        "low": "Low",
-        "open": "Open",
-        "volume": "Volume",
-        "date": "Date",
-    },
-    "crypto": {
-        "high": "High",
-        "close": "Close",
-        "low": "Low",
-        "open": "Open",
-        "volume": "Volume",
-        "date": "Date",
-    },
-    "germany": {
-        "high": "High",
-        "close": "Close",
-        "low": "Low",
-        "open": "Open",
-        "volume": "Volume",
-        "date": "Date",
-    },
+    "usa": _YFINANCE_COLUMNS,
+    "crypto": _YFINANCE_COLUMNS,
+    "germany": _YFINANCE_COLUMNS,
 }

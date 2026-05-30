@@ -1,21 +1,26 @@
 import os
-import time  # Import time module for sleep
+import time
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
+
 from sqlalchemy import create_engine, Column, Integer, String, Float, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import pandas as pd
 import yfinance as yf
 from jugaad_data.nse import stock_df
 
-# Assuming country_columns is imported correctly
 from src.mapper.country_columns import country_columns
 
 Base = declarative_base()
 
-# If you want to start unloading from a specific stock, set this to True and set the stock_start_symbol to the stock you want to start with
-stock_start_enabled = False
-stock_start_symbol = ''
+DATE_FORMAT = '%Y-%m-%d'
+
+# Set STOCK_START_ENABLED=true and STOCK_START_SYMBOL=<symbol> to resume from a specific stock
+STOCK_START_ENABLED = os.environ.get('STOCK_START_ENABLED', 'false').lower() == 'true'
+STOCK_START_SYMBOL = os.environ.get('STOCK_START_SYMBOL', '')
+
 
 class StockData(Base):
     __tablename__ = 'stock_data'
@@ -30,22 +35,35 @@ class StockData(Base):
     volume = Column(Integer)
     country = Column(String)
 
-# Get the DATABASE_URL from Heroku's environment variables
-DATABASE_URL = os.environ.get('DATABASE_URL')
 
-if not DATABASE_URL:
-    # Fallback to local settings if DATABASE_URL is not set
-    DB_HOST = os.environ.get('DB_HOST', 'localhost')
-    DB_PORT = os.environ.get('DB_PORT', '5432')
-    DB_NAME = os.environ.get('DB_NAME', 'stockdata')
-    DB_USER = os.environ.get('DB_USER', 'user')
-    DB_PASSWORD = os.environ.get('DB_PASSWORD', 'password')
-    DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+def _build_database_url() -> str:
+    url = os.environ.get('DATABASE_URL')
+    if url:
+        return url
+    host = os.environ.get('DB_HOST', 'localhost')
+    port = os.environ.get('DB_PORT', '5432')
+    name = os.environ.get('DB_NAME', 'stockdata')
+    user = os.environ.get('DB_USER', 'user')
+    password = os.environ.get('DB_PASSWORD', 'password')
+    return f"postgresql://{user}:{password}@{host}:{port}/{name}"
 
-engine = create_engine(DATABASE_URL)
 
-# Create engine and session
+engine = create_engine(_build_database_url())
 Session = sessionmaker(bind=engine)
+
+
+@contextmanager
+def _session():
+    session = Session()
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
 
 def init_db():
     try:
@@ -54,142 +72,119 @@ def init_db():
     except Exception as e:
         print(f"Error creating tables: {e}")
 
-def save_stock_data(df, symbol, country):
-    session = Session()
-    try:
-        for _, row in df.iterrows():
-            # Create a new StockData object
-            stock_data = StockData(
-                symbol=symbol,
-                date=row['date'],
-                open=row['open'],
-                high=row['high'],
-                low=row['low'],
-                close=row['close'],
-                volume=row['volume'],
-                country=country
-            )
-            session.add(stock_data)
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        print(f"Error saving data: {e}")
-    finally:
-        session.close()
 
-def unload(start_date, end_date, country, stock):
-    print(f'Processing Stock {stock}')
-    session = Session()
-    try:
-        # Check for the latest date we have data for this stock
-        latest_entry = session.query(StockData).filter(StockData.symbol == stock).order_by(StockData.date.desc()).first()
-        if latest_entry:
-            # Set start_date to the day after the latest date we have
-            start_date_in_db = latest_entry.date
-            start_date = (start_date_in_db + timedelta(days=1)).strftime('%Y-%m-%d')
-            print(f"Data already exists up to {latest_entry.date} for {stock}. Updating start_date to {start_date}")
-        else:
-            print(f"No existing data found for {stock}. Using start_date {start_date}")
-        session.close()
-
-        # Check if start_date is after end_date
-        if datetime.strptime(start_date, '%Y-%m-%d') > datetime.strptime(end_date, '%Y-%m-%d'):
-            print(f"No new data to fetch for {stock}")
-            return
-
-        print(f'Unloading Stock {stock} from start_date = {start_date} to end_date = {end_date}')
-        df = get_sorted_data(stock, start_date, end_date, country)
-        save_stock_data(df, stock, country)
-    except Exception as e:
-        print(f"Error fetching data for {stock}: {e}")
-
-def unload_all(start_date, end_date, country):
-    print(f"Starting unload_all for country: {country}")  # Add this line
-    stock_list_path = Path(__file__).parent / f"../resources/stock_list/{country}"
-    print(f"Looking for stock list file at: {stock_list_path}")
-
-    try:
-        with stock_list_path.open() as f:
-            stock_list = f.read().splitlines()
-
-        if not stock_list:
-            print(f"No stocks found for country: {country}")
-            return
-
-        start_processing = not stock_start_enabled
-
-        for stock in stock_list:
-            print(f"Considering stock: {stock}")  # Add this line
-            if stock_start_enabled and stock == stock_start_symbol:
-                start_processing = True
-                print(f"Found start symbol: {stock}")  # Add this line
-                continue  # Skip the stock_start_symbol itself
-
-            if start_processing:
-                unload(start_date, end_date, country, stock)
-                time.sleep(2)  # Sleep for 2 seconds after processing each stock
-            else:
-                print(f"Skipping {stock} as it comes before {stock_start_symbol}")
-
-    except FileNotFoundError:
-        print(f"Stock list file not found for country: {country}")
-    except Exception as e:
-        print(f"Error in unload_all: {e}")
-
-    print(f"Finished unload_all for country: {country}")  # Add this line
-
-def get_sorted_data(stock, start_date, end_date, country):
-    df = fetchData(symbol=stock, from_date=start_date, to_date=end_date, country=country)
-    if df is None or df.empty:
-        raise ValueError(f"No data fetched for stock: {stock}")
-    
-    required_columns = [
-        country_columns[country]["date"],
-        country_columns[country]["open"],
-        country_columns[country]["high"],
-        country_columns[country]["low"],
-        country_columns[country]["close"],
-        country_columns[country]["volume"],
-    ]
-    
-    df = df[required_columns].copy()
-    df = df.sort_values(country_columns[country]["date"])
-    df.rename(columns={
-        country_columns[country]["open"]: "open",
-        country_columns[country]["high"]: "high",
-        country_columns[country]["low"]: "low",
-        country_columns[country]["date"]: "date",
-        country_columns[country]["close"]: "close",
-        country_columns[country]["volume"]: "volume",
-    }, inplace=True)
-    return df
-
-def fetchData(symbol, from_date, to_date, country):
+def fetch_data(symbol: str, from_date: str, to_date: str, country: str):
     if country == 'india':
-        from_date_dt = datetime.strptime(from_date, '%Y-%m-%d')
-        to_date_dt = datetime.strptime(to_date, '%Y-%m-%d')
-        return stock_df(symbol, from_date_dt, to_date_dt, series="EQ")
-    if country in ['usa', 'crypto', 'germany']:
+        return stock_df(
+            symbol,
+            datetime.strptime(from_date, DATE_FORMAT),
+            datetime.strptime(to_date, DATE_FORMAT),
+            series="EQ",
+        )
+
+    if country in country_columns:
         try:
             df = yf.download(symbol, start=from_date, end=to_date)
             if df.empty:
                 print(f"No data available for {symbol} from {from_date} to {to_date}")
                 return None
+            # yfinance >=1.0 returns MultiIndex columns (Price, Ticker); flatten to single level
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
             return df.reset_index()
         except Exception as e:
             print(f"Error fetching data for {symbol}: {e}")
             return None
-    else:
-        print(f"Data fetching not implemented for country: {country}")
-        return None
 
-if __name__ == "__main__":
-    init_db()
-    print("Database initialized")
-    
-    # Set start_date to January 1, 2020, and end_date to current date
-    start_date = '2020-01-01'
-    end_date = datetime.now().strftime('%Y-%m-%d')
-    country = 'usa'  # Specify the country you want to process
+    print(f"Data fetching not implemented for country: {country}")
+    return None
 
-    unload_all(start_date, end_date, country)
+
+def _normalize_columns(df, country: str):
+    cols = country_columns[country]
+    required = [cols["date"], cols["open"], cols["high"], cols["low"], cols["close"], cols["volume"]]
+    df = df[required].copy()
+    df = df.sort_values(cols["date"])
+    df.rename(columns={v: k for k, v in cols.items()}, inplace=True)
+    return df
+
+
+def _save_stock_data(df, symbol: str, country: str):
+    rows = [
+        StockData(
+            symbol=symbol,
+            date=row['date'],
+            open=row['open'],
+            high=row['high'],
+            low=row['low'],
+            close=row['close'],
+            volume=row['volume'],
+            country=country,
+        )
+        for _, row in df.iterrows()
+    ]
+    with _session() as session:
+        session.add_all(rows)
+
+
+def unload(start_date: str, end_date: str, country: str, stock: str):
+    print(f'Processing stock: {stock}')
+
+    with _session() as session:
+        latest = (
+            session.query(StockData)
+            .filter(StockData.symbol == stock)
+            .order_by(StockData.date.desc())
+            .first()
+        )
+        if latest:
+            start_date = (latest.date + timedelta(days=1)).strftime(DATE_FORMAT)
+            print(f"Resuming {stock} from {start_date}")
+        else:
+            print(f"No existing data for {stock}, starting from {start_date}")
+
+    if datetime.strptime(start_date, DATE_FORMAT) > datetime.strptime(end_date, DATE_FORMAT):
+        print(f"No new data to fetch for {stock}")
+        return
+
+    print(f'Fetching {stock}: {start_date} → {end_date}')
+    try:
+        df = fetch_data(symbol=stock, from_date=start_date, to_date=end_date, country=country)
+        if df is None or df.empty:
+            print(f"No data returned for {stock}")
+            return
+        df = _normalize_columns(df, country)
+        _save_stock_data(df, stock, country)
+    except Exception as e:
+        print(f"Error processing {stock}: {e}")
+
+
+def unload_all(start_date: str, end_date: str, country: str):
+    print(f"Starting unload for country: {country}")
+    stock_list_path = Path(__file__).parent.parent / f"resources/stock_list/{country}"
+
+    try:
+        stock_list = stock_list_path.read_text().splitlines()
+    except FileNotFoundError:
+        print(f"Stock list not found: {stock_list_path}")
+        return
+
+    if not stock_list:
+        print(f"No stocks found for country: {country}")
+        return
+
+    start_processing = not STOCK_START_ENABLED
+
+    for stock in stock_list:
+        if not start_processing:
+            if stock == STOCK_START_SYMBOL:
+                start_processing = True
+                print(f"Found start symbol: {stock}")
+            else:
+                print(f"Skipping {stock}")
+            continue
+
+        unload(start_date, end_date, country, stock)
+        time.sleep(2)
+
+    print(f"Finished unload for country: {country}")
