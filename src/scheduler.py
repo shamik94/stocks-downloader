@@ -6,8 +6,8 @@ from apscheduler.triggers.cron import CronTrigger
 
 from src.service.unloader_service import init_db, unload_all
 
-COUNTRIES = os.environ.get('COUNTRIES', 'india,usa').split(',')
-START_DATE = os.environ.get('HISTORY_START_DATE', '2020-01-01')
+COUNTRIES = os.environ.get('COUNTRIES', 'usa').split(',')
+START_DATE = os.environ.get('HISTORY_START_DATE', '2023-01-01')
 
 
 def run_unload():
