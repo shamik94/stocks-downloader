@@ -1,0 +1,25 @@
+src/populate_stock_info.py
+  s_db191ab0b5b2d5::t_c45086bfe4715a 1-80
+README.md
+  s_db191ab0b5b2d5::t_c45086bfe4715a 47,49-61,63,65
+CLAUDE.md
+  s_db191ab0b5b2d5::t_c45086bfe4715a 66,76-91
+src/service/unloader_service.py
+  s_db191ab0b5b2d5::t_c45086bfe4715a 7,39-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "3d66bae5c34a39bf5373e350ea8799d76a73d7a7",
+  "prompts": {},
+  "sessions": {
+    "s_db191ab0b5b2d5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0b42dcc4-0ef7-46df-b4f3-e5d8acf65626",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "“ShamikMukhopadhyay” <“shamik.mukhopadhyay@deliveryhero.com”>"
+    }
+  }
+}
