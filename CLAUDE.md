@@ -63,7 +63,7 @@ Database is auto-initialized on startup.
 
 ## Database Schema
 
-Single table `stock_data`:
+Table `stock_data` (OHLCV, one row per symbol per trading day):
 
 | Column | Type | Notes |
 |---|---|---|
@@ -73,3 +73,19 @@ Single table `stock_data`:
 | `open/high/low/close` | float | OHLC prices |
 | `volume` | integer | Trading volume |
 | `country` | string | Source country |
+
+Table `stock_info` (metadata, one row per symbol; unique on `symbol` + `country`):
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | integer | PK |
+| `symbol` | string | Ticker symbol |
+| `country` | string | Source country |
+| `company_name` | string | Full company name |
+| `sector` | string | Broad sector |
+| `industry` | string | Specific industry |
+| `market_cap` | float | Market capitalisation |
+| `currency` | string | Trading currency |
+| `exchange` | string | Exchange code |
+
+Populated by running `python src/populate_stock_info.py` (not part of the scheduler or docker-compose up). For India stocks, yfinance is queried with a `.NS` suffix to retrieve metadata.

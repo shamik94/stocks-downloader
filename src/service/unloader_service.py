@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from sqlalchemy import create_engine, Column, Integer, String, Float, Date
+from sqlalchemy import create_engine, Column, Integer, String, Float, Date, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import pandas as pd
@@ -34,6 +34,22 @@ class StockData(Base):
     close = Column(Float)
     volume = Column(Integer)
     country = Column(String)
+
+
+class StockInfo(Base):
+    __tablename__ = 'stock_info'
+
+    id = Column(Integer, primary_key=True)
+    symbol = Column(String, nullable=False)
+    country = Column(String, nullable=False)
+    company_name = Column(String)
+    sector = Column(String)
+    industry = Column(String)
+    market_cap = Column(Float)
+    currency = Column(String)
+    exchange = Column(String)
+
+    __table_args__ = (UniqueConstraint('symbol', 'country'),)
 
 
 def _build_database_url() -> str:

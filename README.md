@@ -44,10 +44,25 @@ This will:
 
 After setting up the database, you can run the Python scheduler. It will initialize the database and download stock data:
 
+```bash
 python src/scheduler.py
+```
 
+### 5. Populating Stock Info (One-Time)
 
-### 5. Database Initialization
+After the scheduler has run at least once (so the database tables exist), populate the `stock_info` table with company metadata (industry, sector, market cap, etc.):
+
+```bash
+# Local
+python src/populate_stock_info.py
+
+# Via Docker (one-off, does not start the scheduler)
+docker-compose run --rm app python src/populate_stock_info.py
+```
+
+This script is **not** run automatically on `docker-compose up`. It fetches metadata from yfinance for every symbol in your stock lists and upserts it into the `stock_info` table. Re-running it will refresh existing rows.
+
+### 6. Database Initialization
 
 The PostgreSQL database schema will be initialized when the application starts. If you need to reinitialize the database manually, you can call the `init_db()` function in `src/unloader_service.py`.
 
