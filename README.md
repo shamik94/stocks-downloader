@@ -53,14 +53,14 @@ python src/scheduler.py
 After the scheduler has run at least once (so the database tables exist), populate the `stock_info` table with company metadata (industry, sector, market cap, etc.):
 
 ```bash
+# Via Docker (recommended)
+docker-compose run --rm populate
+
 # Local
 python src/populate_stock_info.py
-
-# Via Docker (one-off, does not start the scheduler)
-docker-compose run --rm app python src/populate_stock_info.py
 ```
 
-This script is **not** run automatically on `docker-compose up`. It fetches metadata from yfinance for every symbol in your stock lists and upserts it into the `stock_info` table. Re-running it will refresh existing rows.
+This script is **not** run automatically on `docker-compose up`. The `populate` service uses the `tools` profile so it is excluded from the default stack. It fetches metadata from yfinance for every symbol in your stock lists and upserts it into the `stock_info` table. Re-running it will refresh existing rows.
 
 ### 6. Database Initialization
 

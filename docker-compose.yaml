@@ -29,5 +29,20 @@ services:
       db:
         condition: service_healthy
 
+  populate:
+    build: .
+    command: python src/populate_stock_info.py
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: stockdata
+      DB_USER: user
+      DB_PASSWORD: password
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - tools
+
 volumes:
   postgres_data:
