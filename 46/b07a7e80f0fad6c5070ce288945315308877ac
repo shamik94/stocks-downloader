@@ -1,0 +1,31 @@
+README.md
+  s_bd353990f1a6f7::t_df08afb58d5d1b 65-79
+src/scheduler.py
+  s_bd353990f1a6f7::t_2cb4278c7d62d7 7,11,19-20
+src/service/unloader_service.py
+  s_bd353990f1a6f7::t_092a81fabeb85c 56-69
+  s_bd353990f1a6f7::t_c9bfe2e9940c88 193-297
+  s_bd353990f1a6f7::t_637d99d0c5b1b6 8
+src/populate_earnings.py
+  s_bd353990f1a6f7::t_c44080b91a1a4b 1-19
+docker-compose.yaml
+  s_bd353990f1a6f7::t_a188bebca0c375 47-61
+CLAUDE.md
+  s_bd353990f1a6f7::t_2ed5b188512e09 92-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "46b07a7e80f0fad6c5070ce288945315308877ac",
+  "prompts": {},
+  "sessions": {
+    "s_bd353990f1a6f7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8009738a-ff4b-4209-9598-da3a78fb5ef5",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "“ShamikMukhopadhyay” <“shamik.mukhopadhyay@deliveryhero.com”>"
+    }
+  }
+}
