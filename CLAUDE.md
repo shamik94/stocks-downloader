@@ -89,3 +89,17 @@ Table `stock_info` (metadata, one row per symbol; unique on `symbol` + `country`
 | `exchange` | string | Exchange code |
 
 Populated by running `python src/populate_stock_info.py` (not part of the scheduler or docker-compose up). For India stocks, yfinance is queried with a `.NS` suffix to retrieve metadata.
+
+Table `stock_earnings` (one row per symbol per earnings date; unique on `symbol` + `country` + `earnings_date`):
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | integer | PK |
+| `symbol` | string | Ticker symbol |
+| `country` | string | Source country |
+| `earnings_date` | date | Earnings announcement date |
+| `eps_estimate` | float | Analyst EPS estimate |
+| `reported_eps` | float | Actual reported EPS (null for future dates) |
+| `surprise_percent` | float | Surprise % vs estimate |
+
+Sourced from yfinance's `Ticker.earnings_dates` (India uses `.NS` suffix). Runs alongside the daily OHLCV unload; upserts on conflict. Skipped for `crypto`.

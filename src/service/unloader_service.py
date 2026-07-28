@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy import create_engine, Column, Integer, String, Float, Date, UniqueConstraint
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import pandas as pd
@@ -50,6 +51,20 @@ class StockInfo(Base):
     exchange = Column(String)
 
     __table_args__ = (UniqueConstraint('symbol', 'country'),)
+
+
+class StockEarnings(Base):
+    __tablename__ = 'stock_earnings'
+
+    id = Column(Integer, primary_key=True)
+    symbol = Column(String, nullable=False)
+    country = Column(String, nullable=False)
+    earnings_date = Column(Date, nullable=False)
+    eps_estimate = Column(Float)
+    reported_eps = Column(Float)
+    surprise_percent = Column(Float)
+
+    __table_args__ = (UniqueConstraint('symbol', 'country', 'earnings_date'),)
 
 
 def _build_database_url() -> str:
@@ -173,6 +188,111 @@ def unload(start_date: str, end_date: str, country: str, stock: str):
         _save_stock_data(df, stock, country)
     except Exception as e:
         print(f"Error processing {stock}: {e}")
+
+
+def _yf_symbol(symbol: str, country: str) -> str:
+    if country == 'india':
+        return symbol + '.NS'
+    return symbol
+
+
+def _to_float(value):
+    if value is None:
+        return None
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return None
+    if pd.isna(f):
+        return None
+    return f
+
+
+def _fetch_earnings(symbol: str, country: str):
+    yf_symbol = _yf_symbol(symbol, country)
+    try:
+        df = yf.Ticker(yf_symbol).earnings_dates
+    except Exception as e:
+        print(f"Error fetching earnings for {yf_symbol}: {e}")
+        return None
+    if df is None or df.empty:
+        return None
+    return df
+
+
+def _save_earnings(df, symbol: str, country: str):
+    rows = []
+    for idx, row in df.iterrows():
+        ts = pd.Timestamp(idx)
+        if pd.isna(ts):
+            continue
+        rows.append({
+            'symbol': symbol,
+            'country': country,
+            'earnings_date': ts.date(),
+            'eps_estimate': _to_float(row.get('EPS Estimate')),
+            'reported_eps': _to_float(row.get('Reported EPS')),
+            'surprise_percent': _to_float(row.get('Surprise(%)')),
+        })
+    if not rows:
+        return
+    stmt = (
+        pg_insert(StockEarnings)
+        .values(rows)
+        .on_conflict_do_update(
+            index_elements=['symbol', 'country', 'earnings_date'],
+            set_={
+                'eps_estimate': pg_insert(StockEarnings).excluded.eps_estimate,
+                'reported_eps': pg_insert(StockEarnings).excluded.reported_eps,
+                'surprise_percent': pg_insert(StockEarnings).excluded.surprise_percent,
+            },
+        )
+    )
+    with _session() as session:
+        session.execute(stmt)
+
+
+def unload_earnings(country: str, stock: str):
+    print(f'Processing earnings: {stock}')
+    df = _fetch_earnings(stock, country)
+    if df is None:
+        print(f"No earnings data for {stock}")
+        return
+    try:
+        _save_earnings(df, stock, country)
+    except Exception as e:
+        print(f"Error saving earnings for {stock}: {e}")
+
+
+def unload_earnings_all(country: str):
+    print(f"Starting earnings unload for country: {country}")
+    stock_list_path = Path(__file__).parent.parent / f"resources/stock_list/{country}"
+
+    try:
+        stock_list = [s for s in stock_list_path.read_text().splitlines() if s.strip()]
+    except FileNotFoundError:
+        print(f"Stock list not found: {stock_list_path}")
+        return
+
+    if not stock_list:
+        print(f"No stocks found for country: {country}")
+        return
+
+    start_processing = not STOCK_START_ENABLED
+
+    for stock in stock_list:
+        if not start_processing:
+            if stock == STOCK_START_SYMBOL:
+                start_processing = True
+                print(f"Found start symbol: {stock}")
+            else:
+                print(f"Skipping {stock}")
+            continue
+
+        unload_earnings(country, stock)
+        time.sleep(2)
+
+    print(f"Finished earnings unload for country: {country}")
 
 
 def unload_all(start_date: str, end_date: str, country: str):

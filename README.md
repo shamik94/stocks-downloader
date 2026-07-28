@@ -62,7 +62,21 @@ python src/populate_stock_info.py
 
 This script is **not** run automatically on `docker-compose up`. The `populate` service uses the `tools` profile so it is excluded from the default stack. It fetches metadata from yfinance for every symbol in your stock lists and upserts it into the `stock_info` table. Re-running it will refresh existing rows.
 
-### 6. Database Initialization
+### 6. Populating Earnings Only
+
+Earnings data is normally fetched alongside OHLCV during the scheduler run. To backfill or refresh only the `stock_earnings` table (skipping the OHLCV download):
+
+```bash
+# Via Docker (recommended)
+docker-compose run --rm earnings
+
+# Local
+python src/populate_earnings.py
+```
+
+Like `populate`, the `earnings` service is under the `tools` profile and is excluded from `docker-compose up`. It walks every symbol in each `COUNTRIES` list (skipping `crypto`), pulls history via `yfinance.Ticker.earnings_dates`, and upserts on `(symbol, country, earnings_date)`.
+
+### 7. Database Initialization
 
 The PostgreSQL database schema will be initialized when the application starts. If you need to reinitialize the database manually, you can call the `init_db()` function in `src/unloader_service.py`.
 

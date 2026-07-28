@@ -4,10 +4,11 @@ from datetime import datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from src.service.unloader_service import init_db, unload_all
+from src.service.unloader_service import init_db, unload_all, unload_earnings_all
 
 COUNTRIES = os.environ.get('COUNTRIES', 'usa').split(',')
 START_DATE = os.environ.get('HISTORY_START_DATE', '2023-01-01')
+EARNINGS_SKIP_COUNTRIES = {'crypto'}
 
 
 def run_unload():
@@ -15,6 +16,8 @@ def run_unload():
     print(f"Running unload for: {COUNTRIES}")
     for country in COUNTRIES:
         unload_all(START_DATE, end_date, country)
+        if country not in EARNINGS_SKIP_COUNTRIES:
+            unload_earnings_all(country)
     print("Unload complete.")
 
 

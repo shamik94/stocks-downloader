@@ -44,5 +44,20 @@ services:
     profiles:
       - tools
 
+  earnings:
+    build: .
+    command: python src/populate_earnings.py
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: stockdata
+      DB_USER: user
+      DB_PASSWORD: password
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - tools
+
 volumes:
   postgres_data:
